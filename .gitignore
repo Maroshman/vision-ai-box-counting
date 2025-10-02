@@ -1,0 +1,84 @@
+# Environment variables (NEVER commit API keys!)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Backup files
+prompt_backup_*.txt
+prompt_backups/
+
+# Test and debug files
+debug_upload.py
+convert_image.py
+test_*.py
+
+# Uploaded images (keep your test images local)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.avif
+*.heic
+*.heif
+
+# But allow example images if you want to include them
+!example_*.jpg
+!example_*.png
+
+# Local development
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Deployment specific (these will be created during deployment)
+.dockerignore

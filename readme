@@ -1,0 +1,214 @@
+# Vision AI Box Counting API
+
+🤖 **AI-powered box counting and label extraction from images using OpenAI's Vision API**
+
+## 🚀 Quick Start
+
+### 1. First-time Setup
+
+```bash
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up your OpenAI API key
+cp .env.example .env
+# Edit .env and add your OpenAI API key
+```
+
+### 2. Run the API Server
+
+```bash
+# Activate virtual environment (if not already active)
+source venv/bin/activate
+
+# Start the FastAPI server
+uvicorn main:app --reload --port 8000
+
+# 🌐 API will be available at:
+# - Main API: http://127.0.0.1:8000
+# - Interactive docs: http://127.0.0.1:8000/docs
+# - Health check: http://127.0.0.1:8000/health
+```
+
+## 📡 API Endpoints
+
+### 1. **POST /count-boxes** - Detailed Analysis
+Upload an image for comprehensive box counting and label extraction:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/count-boxes" \
+  -F "file=@your_image.jpg"
+```
+
+**Response Example:**
+```json
+{
+  "filename": "boxes.jpg",
+  "file_size_bytes": 245760,
+  "analysis": {
+    "total_count": 12,
+    "box_details": [
+      {
+        "box_id": 1,
+        "type": "shipping_box",
+        "labels": ["FRAGILE", "Handle with Care"],
+        "confidence": 0.9,
+        "position": "top_left"
+      }
+    ],
+    "summary": {
+      "total_boxes": 12,
+      "boxes_with_labels": 8,
+      "common_labels": ["FRAGILE", "Amazon"],
+      "arrangement": "stacked_pyramid"
+    },
+    "confidence_score": 0.85
+  },
+  "status": "success"
+}
+```
+
+### 2. **POST /count-boxes-simple** - Quick Count
+Simple endpoint returning just count and labels:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/count-boxes-simple" \
+  -F "file=@your_image.jpg"
+```
+
+**Response Example:**
+```json
+{
+  "count": 12,
+  "labels": ["FRAGILE", "Amazon", "Handle with Care"],
+  "confidence": 0.85
+}
+```
+
+### 3. **GET /health** - Health Check
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+## 🧪 Testing
+
+### Automated Testing
+Run the comprehensive test suite:
+
+```bash
+# Test API endpoints
+python test_api.py
+
+# Test with a specific image
+python test_api.py path/to/your/image.jpg
+```
+
+### Manual Testing via Web Interface
+1. Open http://127.0.0.1:8000/docs in your browser
+2. Click on any endpoint to test it interactively
+3. Upload images and see results in real-time
+
+## 📋 Requirements
+
+- **Python 3.8+**
+- **OpenAI API Key** (get from https://platform.openai.com/api-keys)
+- **Supported image formats:** JPEG, PNG, WebP, GIF
+- **Maximum file size:** 20MB
+
+## 🔧 Configuration
+
+### Environment Variables (.env file)
+```bash
+# Required
+OPENAI_API_KEY=sk-your-key-here
+
+# Optional
+LOG_LEVEL=INFO
+MAX_FILE_SIZE_MB=20
+```
+
+### Supported Image Types
+- JPEG/JPG
+- PNG
+- WebP
+- GIF
+
+## 🎯 Features
+
+- ✅ **Accurate box counting** using GPT-4 Vision
+- ✅ **Label extraction** from box text/barcodes
+- ✅ **Confidence scoring** for reliability
+- ✅ **Multiple response formats** (detailed vs simple)
+- ✅ **Comprehensive error handling**
+- ✅ **File validation** and size limits
+- ✅ **Interactive API documentation**
+- ✅ **Health monitoring**
+
+## 📊 Example Use Cases
+
+1. **Warehouse inventory counting**
+2. **Shipping/receiving verification**
+3. **Package sorting automation**
+4. **Quality control inspections**
+5. **Audit trail documentation**
+
+## 🔍 Response Details
+
+The API provides different levels of detail:
+
+- **Box count**: Total number of detected boxes
+- **Label extraction**: Text found on boxes (shipping labels, barcodes, etc.)
+- **Box classification**: Type identification (shipping, product, container, etc.)
+- **Position information**: General location descriptions
+- **Confidence scores**: Reliability indicators for each detection
+
+## 🚨 Troubleshooting
+
+### Common Issues:
+
+1. **"AI analysis failed"**
+   - Check your OpenAI API key is set correctly
+   - Ensure you have API credits available
+
+2. **"Invalid file type"**
+   - Use supported formats: JPEG, PNG, WebP, GIF
+   - Check file is not corrupted
+
+3. **"File too large"**
+   - Resize image to under 20MB
+   - Use image compression tools
+
+4. **Connection errors**
+   - Ensure the server is running on port 8000
+   - Check firewall settings
+
+### Debug Mode:
+```bash
+# Run with debug logging
+LOG_LEVEL=DEBUG uvicorn main:app --reload --port 8000
+```
+
+## 📝 Development
+
+### Project Structure:
+```
+├── main.py              # Main FastAPI application
+├── requirements.txt     # Python dependencies
+├── test_api.py         # Test suite
+├── .env.example        # Environment configuration template
+└── readme              # This file
+```
+
+### Adding Features:
+1. Modify the AI prompt in `create_box_counting_prompt()`
+2. Extend response models in the endpoint functions
+3. Add new endpoints following the existing pattern
+
+---
+
+**Made with ❤️ using FastAPI + OpenAI Vision API**
+
