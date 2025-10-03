@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 import base64
 import json
 import os
@@ -39,6 +40,10 @@ except Exception as e:
 
 # For deployment - handle PORT environment variable
 PORT = int(os.getenv("PORT", 8000))
+
+# Pydantic models for request/response
+class ImageBase64Request(BaseModel):
+    image: str  # Base64 encoded image string
 
 def encode_image_to_base64(image_bytes: bytes) -> str:
     """Convert image bytes to base64 string for OpenAI API"""
@@ -138,7 +143,9 @@ def read_root():
         "message": "Vision AI Box Counting API",
         "version": "1.0.0",
         "endpoints": {
-            "/count-boxes": "POST - Upload image for box counting and label extraction",
+            "/count-boxes": "POST - Upload image file for box counting and label extraction",
+            "/count-boxes-simple": "POST - Upload image file for simplified box counting",
+            "/count-boxes-base64": "POST - Send base64 image for box counting and label extraction",
             "/health": "GET - Health check endpoint"
         }
     }
@@ -272,3 +279,74 @@ async def count_boxes_simple(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Simple endpoint error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/count-boxes-base64")
+async def count_boxes_base64(request: ImageBase64Request):
+    """
+    Count boxes from base64 encoded image
+    
+    Args:
+        request: JSON with base64 encoded image string
+        
+    Returns:
+        JSON response with box count and label information
+    """
+    try:
+        # Extract base64 string (handle data URL format)
+        image_data = request.image
+        if image_data.startswith('data:'):
+            # Remove data URL prefix (e.g., "data:image/jpeg;base64,")
+            image_data = image_data.split(',', 1)[1]
+        
+        # Decode base64 to bytes
+        try:
+            image_bytes = base64.b64decode(image_data)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid base64 image data: {str(e)}")
+        
+        # Validate and process image
+        try:
+            image = Image.open(io.BytesIO(image_bytes))
+            
+            # Convert to RGB if necessary and save as JPEG
+            if image.mode in ('RGBA', 'LA'):
+                background = Image.new('RGB', image.size, (255, 255, 255))
+                background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                image = background
+            elif image.mode != 'RGB':
+                image = image.convert('RGB')
+            
+            # Convert to bytes for processing
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='JPEG', quality=85)
+            processed_image_bytes = img_byte_arr.getvalue()
+            
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid image format: {str(e)}")
+        
+        # Check file size (20MB limit)
+        if len(processed_image_bytes) > 20 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Image too large. Maximum size is 20MB.")
+        
+        logger.info(f"Processing base64 image: {len(processed_image_bytes)} bytes")
+        
+        # Convert to base64 for OpenAI API
+        image_base64 = encode_image_to_base64(processed_image_bytes)
+        
+        # Analyze with OpenAI
+        analysis_result = await analyze_image_with_openai(image_base64)
+        
+        return JSONResponse(content={
+            "analysis": analysis_result,
+            "image_info": {
+                "size_bytes": len(processed_image_bytes),
+                "format": "JPEG",
+                "dimensions": f"{image.width}x{image.height}"
+            }
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Base64 endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
