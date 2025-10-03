@@ -56,14 +56,16 @@ class BoxCountingClient:
 def example_usage():
     """Example of how to use the client"""
     
-    # Initialize client (with optional API key)
-    api_key = os.getenv("API_KEY")  # Get API key from environment if available
-    client = BoxCountingClient(api_key=api_key)
+    # API key is required
+    api_key = os.getenv("API_KEY")
+    if not api_key:
+        print("❌ API_KEY environment variable is required!")
+        print("   Set it in your .env file or environment variables")
+        print("   Example: API_KEY=your_secure_api_key_here")
+        return
     
-    if api_key:
-        print(f"🔐 Using API key authentication")
-    else:
-        print("🔓 No API key provided - using unauthenticated access")
+    client = BoxCountingClient(api_key=api_key)
+    print(f"� Using API key authentication")
     
     # Check if API is running
     if not client.health_check():
@@ -118,17 +120,17 @@ def create_test_curl_commands():
     print("\n1. Health check:")
     print("   curl http://127.0.0.1:8000/health")
     
-    print("\n2. Detailed box counting (with auth):")
+    print("\n2. Detailed box counting:")
     print("   curl -X POST \"http://127.0.0.1:8000/count-boxes\" \\")
     print("     -H \"Authorization: Bearer YOUR_API_KEY\" \\")
     print("     -F \"file=@your_image.jpg\"")
     
-    print("\n3. Simple box counting (with auth):")
+    print("\n3. Simple box counting:")
     print("   curl -X POST \"http://127.0.0.1:8000/count-boxes-simple\" \\")
     print("     -H \"Authorization: Bearer YOUR_API_KEY\" \\")
     print("     -F \"file=@your_image.jpg\"")
     
-    print("\n   Note: Remove the Authorization header if API_KEY is not configured")
+    print("\n   Note: Replace YOUR_API_KEY with your actual API key from .env file")
 
 if __name__ == "__main__":
     print("🤖 Vision AI Box Counting - Example Usage")

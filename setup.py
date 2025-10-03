@@ -117,10 +117,11 @@ def check_openai_key():
         return False
 
 def check_api_key():
-    """Check if API key for authentication is configured"""
+    """Check if API key for authentication is configured - now required"""
     env_file = Path(".env")
     
     if not env_file.exists():
+        print("❌ .env file not found - API key is required!")
         return False
     
     try:
@@ -128,14 +129,19 @@ def check_api_key():
             content = f.read()
             
         if "API_KEY=your_secure_api_key_here" in content:
-            print("⚠️  Consider setting a secure API_KEY in .env for production security")
+            print("❌ Please set a secure API_KEY in .env (required for all environments)")
             print("   Generate one with: openssl rand -hex 32")
             return False
         elif "API_KEY=" in content and "your_secure_api_key_here" not in content:
-            print("✅ API key for authentication is configured")
-            return True
+            api_key_line = [line for line in content.split('\n') if line.startswith('API_KEY=')]
+            if api_key_line and len(api_key_line[0].split('=')[1].strip()) > 10:
+                print("✅ API key is configured")
+                return True
+            else:
+                print("❌ API key is too short - please use a secure key (at least 16 characters)")
+                return False
         else:
-            print("ℹ️  API key not set - API will run without authentication")
+            print("❌ API_KEY not found in .env file - authentication is required")
             return False
             
     except Exception as e:
@@ -150,7 +156,8 @@ def print_next_steps():
     
     print("\n📋 Next steps:")
     print("1. Make sure your OpenAI API key is set in .env file")
-    print("2. (Optional) Set API_KEY in .env for authentication security")
+    print("2. Set a secure API_KEY in .env (REQUIRED for authentication)")
+    print("   Generate one with: openssl rand -hex 32")
     print("3. Activate the virtual environment:")
     
     if os.name == 'nt':  # Windows

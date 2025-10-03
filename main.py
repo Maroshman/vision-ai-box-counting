@@ -45,18 +45,13 @@ PORT = int(os.getenv("PORT", 8000))
 # API Key Authentication Setup
 API_KEY = os.getenv("API_KEY")
 if not API_KEY:
-    logger.warning("API_KEY not found in environment variables - API will be unsecured!")
-    API_KEY = None
+    logger.error("API_KEY not found in environment variables - API authentication is required!")
+    raise Exception("API_KEY must be set in .env file for security")
 
 security = HTTPBearer(auto_error=False)
 
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Verify API key from Authorization header"""
-    if API_KEY is None:
-        # If no API key is set, allow access (for development)
-        logger.warning("No API key configured - allowing unrestricted access")
-        return True
-    
+    """Verify API key from Authorization header - Always required"""
     if credentials is None:
         raise HTTPException(
             status_code=401,
@@ -197,16 +192,15 @@ async def analyze_image_with_openai(image_base64: str) -> Dict[str, Any]:
 @app.get("/")
 def read_root():
     """Root endpoint with API information"""
-    auth_required = API_KEY is not None
     return {
         "message": "Vision AI Box Counting API",
         "version": "1.0.0",
-        "authentication_required": auth_required,
-        "authentication_header": "Authorization: Bearer YOUR_API_KEY" if auth_required else "Not required",
+        "authentication_required": True,
+        "authentication_header": "Authorization: Bearer YOUR_API_KEY",
         "endpoints": {
-            "/count-boxes": "POST - Upload image file for box counting and label extraction" + (" (requires auth)" if auth_required else ""),
-            "/count-boxes-simple": "POST - Upload image file for simplified box counting" + (" (requires auth)" if auth_required else ""),
-            "/count-boxes-base64": "POST - Send base64 image for box counting and label extraction" + (" (requires auth)" if auth_required else ""),
+            "/count-boxes": "POST - Upload image file for box counting and label extraction (requires auth)",
+            "/count-boxes-simple": "POST - Upload image file for simplified box counting (requires auth)",
+            "/count-boxes-base64": "POST - Send base64 image for box counting and label extraction (requires auth)",
             "/health": "GET - Health check endpoint (no auth required)"
         }
     }
@@ -214,11 +208,10 @@ def read_root():
 @app.get("/health")
 def health_check():
     """Health check endpoint - no authentication required"""
-    api_key_status = "configured" if API_KEY else "not configured"
     return {
         "status": "healthy", 
         "service": "box-counting-ai",
-        "authentication": api_key_status
+        "authentication": "required"
     }
 
 @app.post("/count-boxes")
