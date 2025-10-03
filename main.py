@@ -91,6 +91,9 @@ Return your analysis in JSON format with total_count, box_details array, summary
 
 async def analyze_image_with_openai(image_base64: str) -> Dict[str, Any]:
     """Send image to OpenAI Vision API for box counting and label extraction"""
+    import time
+    start_time = time.time()
+    
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o",  # Latest vision model
@@ -106,15 +109,18 @@ async def analyze_image_with_openai(image_base64: str) -> Dict[str, Any]:
                             "type": "image_url",
                             "image_url": {
                                 "url": f"data:image/jpeg;base64,{image_base64}",
-                                "detail": "high"
+                                "detail": "auto"  # Changed from "high" to "auto" for better speed/quality balance
                             }
                         }
                     ]
                 }
             ],
-            max_tokens=2000,
+            max_tokens=1000,  # Reduced from 2000 for faster processing
             temperature=0.1
         )
+        
+        processing_time = time.time() - start_time
+        logger.info(f"OpenAI API processing time: {processing_time:.2f} seconds")
         
         content = response.choices[0].message.content
         
