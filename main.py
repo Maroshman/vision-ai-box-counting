@@ -1,5 +1,6 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import base64
 import json
@@ -40,6 +41,35 @@ except Exception as e:
 
 # For deployment - handle PORT environment variable
 PORT = int(os.getenv("PORT", 8000))
+
+# API Key Authentication Setup
+API_KEY = os.getenv("API_KEY")
+if not API_KEY:
+    logger.warning("API_KEY not found in environment variables - API will be unsecured!")
+    API_KEY = None
+
+security = HTTPBearer(auto_error=False)
+
+def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify API key from Authorization header"""
+    if API_KEY is None:
+        # If no API key is set, allow access (for development)
+        logger.warning("No API key configured - allowing unrestricted access")
+        return True
+    
+    if credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authorization header required. Use 'Authorization: Bearer YOUR_API_KEY'"
+        )
+    
+    if credentials.credentials != API_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API key"
+        )
+    
+    return True
 
 # Pydantic models for request/response
 class ImageBase64Request(BaseModel):
@@ -167,24 +197,32 @@ async def analyze_image_with_openai(image_base64: str) -> Dict[str, Any]:
 @app.get("/")
 def read_root():
     """Root endpoint with API information"""
+    auth_required = API_KEY is not None
     return {
         "message": "Vision AI Box Counting API",
         "version": "1.0.0",
+        "authentication_required": auth_required,
+        "authentication_header": "Authorization: Bearer YOUR_API_KEY" if auth_required else "Not required",
         "endpoints": {
-            "/count-boxes": "POST - Upload image file for box counting and label extraction",
-            "/count-boxes-simple": "POST - Upload image file for simplified box counting",
-            "/count-boxes-base64": "POST - Send base64 image for box counting and label extraction",
-            "/health": "GET - Health check endpoint"
+            "/count-boxes": "POST - Upload image file for box counting and label extraction" + (" (requires auth)" if auth_required else ""),
+            "/count-boxes-simple": "POST - Upload image file for simplified box counting" + (" (requires auth)" if auth_required else ""),
+            "/count-boxes-base64": "POST - Send base64 image for box counting and label extraction" + (" (requires auth)" if auth_required else ""),
+            "/health": "GET - Health check endpoint (no auth required)"
         }
     }
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": "box-counting-ai"}
+    """Health check endpoint - no authentication required"""
+    api_key_status = "configured" if API_KEY else "not configured"
+    return {
+        "status": "healthy", 
+        "service": "box-counting-ai",
+        "authentication": api_key_status
+    }
 
 @app.post("/count-boxes")
-async def count_boxes(file: UploadFile = File(...)):
+async def count_boxes(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):
     """
     Count boxes and extract labels from uploaded image
     
@@ -271,7 +309,7 @@ async def count_boxes(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.post("/count-boxes-simple")
-async def count_boxes_simple(file: UploadFile = File(...)):
+async def count_boxes_simple(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):
     """
     Simplified box counting endpoint that returns just the count and labels
     
@@ -312,7 +350,7 @@ async def count_boxes_simple(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/count-boxes-base64")
-async def count_boxes_base64(request: ImageBase64Request):
+async def count_boxes_base64(request: ImageBase64Request, _: bool = Depends(verify_api_key)):
     """
     Count boxes from base64 encoded image
     

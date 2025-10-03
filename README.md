@@ -29,10 +29,10 @@ AI-powered box counting and label extraction from images using OpenAI's GPT-4o V
    pip install -r requirements.txt
    ```
 
-3. **Configure API key**
+3. **Configure API keys**
    ```bash
    cp .env.example .env
-   # Edit .env and add your OpenAI API key
+   # Edit .env and add your OpenAI API key and optional API key for authentication
    ```
 
 4. **Run the API**
@@ -62,6 +62,23 @@ gcloud run deploy --source . --platform managed
 See `deploy-railway.md` or `deploy-cloudrun.md` for detailed instructions.
 
 ## 📖 API Usage
+
+### Authentication
+
+The API supports optional authentication using API keys. If an `API_KEY` is set in your environment variables, all endpoints (except `/health`) will require authentication.
+
+**With Authentication:**
+```bash
+curl -X POST "https://your-api-url.com/count-boxes" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@boxes.jpg"
+```
+
+**Without Authentication (development):**
+```bash
+curl -X POST "https://your-api-url.com/count-boxes" \
+  -F "file=@boxes.jpg"
+```
 
 ### Upload Image for Analysis
 ```bash
