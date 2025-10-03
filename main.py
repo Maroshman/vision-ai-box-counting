@@ -29,8 +29,15 @@ if not openai_api_key:
     logger.error("OPENAI_API_KEY not found in environment variables")
     raise Exception("OPENAI_API_KEY must be set in .env file")
 
-# Initialize OpenAI client (newer version)
-openai_client = openai.OpenAI(api_key=openai_api_key)
+# Initialize OpenAI client with minimal configuration
+try:
+    openai_client = openai.OpenAI(
+        api_key=openai_api_key,
+        timeout=30.0
+    )
+except Exception as e:
+    logger.error(f"Failed to initialize OpenAI client: {e}")
+    raise Exception(f"Failed to initialize OpenAI client: {e}")
 
 # For deployment - handle PORT environment variable
 PORT = int(os.getenv("PORT", 8000))
