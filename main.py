@@ -120,17 +120,39 @@ async def analyze_image_with_openai(image_base64: str) -> Dict[str, Any]:
         
         # Try to parse JSON from the response
         try:
-            # Look for JSON in the response
-            json_start = content.find('{')
-            json_end = content.rfind('}') + 1
-            if json_start != -1 and json_end != -1:
-                json_content = content[json_start:json_end]
-                return json.loads(json_content)
-            else:
-                # Fallback: return raw content
-                return {"raw_output": content}
-        except json.JSONDecodeError:
-            return {"raw_output": content}
+            # First priority: Look for JSON content between ```json and ``` markdown blocks
+            if '```json' in content:
+                start_marker = content.find('```json') + 7
+                end_marker = content.find('```', start_marker)
+                if start_marker != -1 and end_marker != -1:
+                    json_content = content[start_marker:end_marker].strip()
+                    detected_boxes = json.loads(json_content)
+                    return {"detected_boxes": detected_boxes}
+            
+            # Second priority: Look for JSON array (starts with [)
+            array_start = content.find('[')
+            array_end = content.rfind(']') + 1
+            
+            if array_start != -1 and array_end != -1:
+                json_content = content[array_start:array_end]
+                detected_boxes = json.loads(json_content)
+                return {"detected_boxes": detected_boxes}
+            
+            # Third priority: Look for JSON object (starts with {)
+            obj_start = content.find('{')
+            obj_end = content.rfind('}') + 1
+            if obj_start != -1 and obj_end != -1:
+                json_content = content[obj_start:obj_end]
+                parsed_obj = json.loads(json_content)
+                return {"detected_boxes": parsed_obj}
+            
+            # If no JSON found, return empty array
+            return {"detected_boxes": []}
+            
+        except json.JSONDecodeError as e:
+            logger.warning(f"JSON parsing failed: {e}, content: {content[:200]}...")
+            # Final fallback: return empty array
+            return {"detected_boxes": []}
             
     except Exception as e:
         logger.error(f"OpenAI API error: {str(e)}")
@@ -222,11 +244,14 @@ async def count_boxes(file: UploadFile = File(...)):
         logger.info(f"Analyzing image: {file.filename}, size: {len(file_bytes)} bytes")
         result = await analyze_image_with_openai(image_base64)
         
+        # Extract detected_boxes from the result and return in the new format
+        detected_boxes = result.get("detected_boxes", [])
+        
         # Add metadata
         response = {
             "filename": file.filename,
             "file_size_bytes": len(file_bytes),
-            "analysis": result,
+            "detected_boxes": detected_boxes,
             "status": "success"
         }
         
@@ -254,25 +279,25 @@ async def count_boxes_simple(file: UploadFile = File(...)):
         # Use the main endpoint logic
         full_response = await count_boxes(file)
         
-        # Extract simplified information
-        analysis = full_response["analysis"]
+        # Extract simplified information - now using the new structure
+        detected_boxes = full_response.get("detected_boxes", [])
         
-        if "total_count" in analysis:
-            # Structured response
-            all_labels = []
-            for box in analysis.get("box_details", []):
-                all_labels.extend(box.get("labels", []))
-            
-            simple_response = {
-                "count": analysis.get("total_count", 0),
-                "labels": list(set(all_labels)),  # Remove duplicates
-                "confidence": analysis.get("confidence_score", 0.0)
-            }
-        else:
-            # Fallback for raw output
-            simple_response = {
-                "raw_output": analysis.get("raw_output", "Analysis failed")
-            }
+        # Count total quantity and extract unique labels
+        total_count = 0
+        all_labels = []
+        
+        for box in detected_boxes:
+            if isinstance(box, dict) and "quantity" in box:
+                total_count += box.get("quantity", 0)
+                label = box.get("label", "")
+                if label and label != "unidentified":
+                    all_labels.append(label)
+        
+        simple_response = {
+            "count": total_count,
+            "labels": list(set(all_labels)),  # Remove duplicates
+            "detected_boxes": detected_boxes
+        }
             
         return JSONResponse(content=simple_response)
         
@@ -336,8 +361,11 @@ async def count_boxes_base64(request: ImageBase64Request):
         # Analyze with OpenAI
         analysis_result = await analyze_image_with_openai(image_base64)
         
+        # Extract detected_boxes from the analysis result and return in the new format
+        detected_boxes = analysis_result.get("detected_boxes", [])
+        
         return JSONResponse(content={
-            "analysis": analysis_result,
+            "detected_boxes": detected_boxes,
             "image_info": {
                 "size_bytes": len(processed_image_bytes),
                 "format": "JPEG",
