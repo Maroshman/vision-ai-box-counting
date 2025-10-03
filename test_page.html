@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision AI Box Counting - Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 600px;
+        }
+
+        .upload-section {
+            padding: 40px;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .results-section {
+            padding: 40px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-group {
+            margin-bottom: 25px;
+        }
+
+        .config-group label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .config-group input[type="text"], .config-group input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .config-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .drop-zone {
+            border: 3px dashed #d1d5db;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f9fafb;
+        }
+
+        .drop-zone.dragover {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+
+        .drop-zone:hover {
+            border-color: #6366f1;
+            background: #f0f4ff;
+        }
+
+        .drop-zone-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #9ca3af;
+        }
+
+        .upload-text {
+            font-size: 1.1em;
+            color: #6b7280;
+        }
+
+        .file-info {
+            background: #e0f2fe;
+            border: 1px solid #0891b2;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid #10b981;
+        }
+
+        .result-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 8px;
+        }
+
+        .summary-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #0891b2;
+        }
+
+        .summary-label {
+            font-size: 0.9em;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .boxes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .box-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 3px solid #6366f1;
+        }
+
+        .box-label {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 1.1em;
+        }
+
+        .box-quantity {
+            background: #4f46e5;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .empty-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-section {
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .upload-section, .results-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Vision AI Box Counting</h1>
+            <p>Upload an image to detect and count boxes with their labels</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <h2 class="section-title">
+                    📤 Upload & Configure
+                </h2>
+
+                <!-- Configuration -->
+                <div class="config-group">
+                    <label for="api-url">API Base URL:</label>
+                    <input type="url" id="api-url" value="http://127.0.0.1:8000" placeholder="http://127.0.0.1:8000">
+                </div>
+
+                <div class="config-group">
+                    <label for="api-key">API Key:</label>
+                    <input type="text" id="api-key" placeholder="Enter your API key">
+                </div>
+
+                <!-- File Upload -->
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <div class="upload-icon">📷</div>
+                        <div class="upload-text">
+                            <strong>Click to select</strong> or drag and drop an image
+                        </div>
+                        <div style="font-size: 0.9em; color: #9ca3af;">
+                            Supports: JPG, PNG, WebP, GIF (max 20MB)
+                        </div>
+                        <div style="font-size: 0.8em; color: #10b981; margin-top: 8px;">
+                            💡 You can upload multiple images for testing
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                </div>
+
+                <div class="file-info" id="fileInfo">
+                    <div id="fileName"></div>
+                    <div id="fileSize"></div>
+                    <img id="previewImage" class="preview-image" style="display: none;">
+                </div>
+
+                <button class="analyze-btn" id="analyzeBtn" disabled>
+                    🔍 Analyze Image
+                </button>
+
+                <button class="analyze-btn" id="clearBtn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); display: none; margin-top: 10px;">
+                    🗑️ Clear & Upload New
+                </button>
+
+                <div class="error" id="errorMessage"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section">
+                <h2 class="section-title">
+                    📊 Detection Results
+                </h2>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div>Analyzing image with AI...</div>
+                    <div style="font-size: 0.9em; color: #6b7280; margin-top: 10px;">
+                        This may take a few seconds
+                    </div>
+                </div>
+
+                <div class="results" id="results">
+                    <div class="result-card">
+                        <div class="result-summary" id="resultSummary">
+                            <!-- Summary will be populated here -->
+                        </div>
+
+                        <h3 style="margin-bottom: 15px; color: #1f2937;">Detected Boxes:</h3>
+                        <div class="boxes-list" id="boxesList">
+                            <!-- Boxes will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📦</div>
+                    <div>Upload an image to see box detection results</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const previewImage = document.getElementById('previewImage');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const emptyState = document.getElementById('emptyState');
+        const errorMessage = document.getElementById('errorMessage');
+        const apiUrlInput = document.getElementById('api-url');
+        const apiKeyInput = document.getElementById('api-key');
+        const resultSummary = document.getElementById('resultSummary');
+        const boxesList = document.getElementById('boxesList');
+
+        const clearBtn = document.getElementById('clearBtn');
+
+        let selectedFile = null;
+
+        // Load saved settings
+        if (localStorage.getItem('apiUrl')) {
+            apiUrlInput.value = localStorage.getItem('apiUrl');
+        }
+        if (localStorage.getItem('apiKey')) {
+            apiKeyInput.value = localStorage.getItem('apiKey');
+        }
+
+        // Save settings on change
+        apiUrlInput.addEventListener('change', () => {
+            localStorage.setItem('apiUrl', apiUrlInput.value);
+        });
+
+        apiKeyInput.addEventListener('change', () => {
+            localStorage.setItem('apiKey', apiKeyInput.value);
+        });
+
+        // Drag and drop functionality
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                showError('Please select a valid image file (JPG, PNG, WebP, GIF)');
+                return;
+            }
+
+            // Validate file size (20MB)
+            const maxSize = 20 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showError('File size must be less than 20MB');
+                return;
+            }
+
+            selectedFile = file;
+            
+            // Show file info
+            fileName.textContent = `📄 ${file.name}`;
+            fileSize.textContent = `📊 ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewImage.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            fileInfo.classList.add('show');
+            analyzeBtn.disabled = false;
+            clearBtn.style.display = 'block';
+            hideError();
+        }
+
+        function clearSelection() {
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.classList.remove('show');
+            previewImage.style.display = 'none';
+            analyzeBtn.disabled = true;
+            clearBtn.style.display = 'none';
+            results.classList.remove('show');
+            emptyState.style.display = 'block';
+            hideError();
+        }
+
+        // Analyze button click
+        analyzeBtn.addEventListener('click', analyzeImage);
+        
+        // Clear button click
+        clearBtn.addEventListener('click', clearSelection);
+
+        async function analyzeImage() {
+            if (!selectedFile) return;
+
+            const apiUrl = apiUrlInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!apiUrl) {
+                showError('Please enter API URL');
+                return;
+            }
+
+            if (!apiKey) {
+                showError('Please enter API Key');
+                return;
+            }
+
+            // Show loading state
+            loading.classList.add('show');
+            results.classList.remove('show');
+            emptyState.style.display = 'none';
+            analyzeBtn.disabled = true;
+            hideError();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                const response = await fetch(`${apiUrl}/count-boxes-base64`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: await fileToBase64(selectedFile)
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Analysis failed:', error);
+                showError(`Analysis failed: ${error.message}`);
+            } finally {
+                loading.classList.remove('show');
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function displayResults(data) {
+            const detectedBoxes = data.detected_boxes || [];
+            const imageInfo = data.image_info || {};
+
+            // Calculate summary
+            const totalBoxes = detectedBoxes.reduce((sum, box) => sum + (box.quantity || 0), 0);
+            const uniqueLabels = detectedBoxes.filter(box => box.label !== 'unidentified').length;
+            const unidentified = detectedBoxes.find(box => box.label === 'unidentified')?.quantity || 0;
+
+            // Display summary
+            resultSummary.innerHTML = `
+                <div class="summary-item">
+                    <div class="summary-value">${totalBoxes}</div>
+                    <div class="summary-label">Total Boxes</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${uniqueLabels}</div>
+                    <div class="summary-label">Unique Labels</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${unidentified}</div>
+                    <div class="summary-label">Unidentified</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${imageInfo.dimensions || 'N/A'}</div>
+                    <div class="summary-label">Resolution</div>
+                </div>
+            `;
+
+            // Display boxes
+            if (detectedBoxes.length === 0) {
+                boxesList.innerHTML = '<div style="text-align: center; padding: 20px; color: #6b7280;">No boxes detected in this image</div>';
+            } else {
+                boxesList.innerHTML = detectedBoxes.map(box => `
+                    <div class="box-item">
+                        <div class="box-label">${box.label || 'Unknown'}</div>
+                        <div class="box-quantity">${box.quantity || 0}</div>
+                    </div>
+                `).join('');
+            }
+
+            results.classList.add('show');
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+    </script>
+</body>
+</html>

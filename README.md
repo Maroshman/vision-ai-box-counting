@@ -52,7 +52,9 @@ AI-powered box counting and label extraction from images using OpenAI's GPT-4o V
 
 1. Fork this repository
 2. Connect to [Railway](https://railway.app)
-3. Set `OPENAI_API_KEY` environment variable
+3. Set environment variables:
+   - `OPENAI_API_KEY` (your OpenAI API key)
+   - `API_KEY` (generate with: `openssl rand -hex 32`)
 4. Deploy automatically!
 
 ### Google Cloud Run

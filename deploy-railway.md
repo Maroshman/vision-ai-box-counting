@@ -26,16 +26,40 @@
 
 ### Step 3: Set Environment Variables in Railway
 
+**Required Variables:**
 ```
 OPENAI_API_KEY=your_openai_api_key_here
+API_KEY=your_secure_api_key_here
+```
+
+**Optional Variables:**
+```
 LOG_LEVEL=INFO
 MAX_FILE_SIZE_MB=20
+```
+
+**How to set variables:**
+1. In Railway dashboard, click your service
+2. Go to "Variables" tab
+3. Click "New Variable" for each one
+4. Add the variable name and value
+5. Railway will automatically redeploy
+
+**Generate secure API key:**
+```bash
+openssl rand -hex 32
 ```
 
 ### Step 4: Test Your Deployment
 
 ```bash
+# Test health endpoint (no auth required)
 curl https://your-app-name.railway.app/health
+
+# Test authenticated endpoint
+curl -X POST "https://your-app-name.railway.app/count-boxes" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@your_image.jpg"
 ```
 
 ## 🐳 Alternative: Google Cloud Run
