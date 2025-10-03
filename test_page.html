@@ -113,6 +113,10 @@
             background: #f9fafb;
         }
 
+        .drop-zone.hidden {
+            display: none;
+        }
+
         .drop-zone.dragover {
             border-color: #4f46e5;
             background: #eef2ff;
@@ -155,10 +159,36 @@
 
         .preview-image {
             max-width: 100%;
-            max-height: 200px;
+            max-height: 400px;
             border-radius: 8px;
             margin-top: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+
+        .image-container {
+            text-align: center;
+            padding: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            background: #f9fafb;
+            margin-top: 15px;
+        }
+
+        .change-image-btn {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .change-image-btn:hover {
+            background: #4b5563;
         }
 
         .analyze-btn {
@@ -344,15 +374,7 @@
                 </h2>
 
                 <!-- Configuration -->
-                <div class="config-group">
-                    <label for="api-url">API Base URL:</label>
-                    <input type="url" id="api-url" value="http://127.0.0.1:8000" placeholder="http://127.0.0.1:8000">
-                </div>
-
-                <div class="config-group">
-                    <label for="api-key">API Key:</label>
-                    <input type="text" id="api-key" placeholder="Enter your API key">
-                </div>
+                <!-- API URL is auto-detected, no manual input needed -->
 
                 <!-- File Upload -->
                 <div class="drop-zone" id="dropZone">
@@ -374,7 +396,13 @@
                 <div class="file-info" id="fileInfo">
                     <div id="fileName"></div>
                     <div id="fileSize"></div>
-                    <img id="previewImage" class="preview-image" style="display: none;">
+                    <div class="image-container" id="imageContainer" style="display: none;">
+                        <img id="previewImage" class="preview-image">
+                        <br>
+                        <button class="change-image-btn" onclick="document.getElementById('fileInput').click();">
+                            📷 Change Image
+                        </button>
+                    </div>
                 </div>
 
                 <button class="analyze-btn" id="analyzeBtn" disabled>
@@ -430,15 +458,15 @@
         const fileName = document.getElementById('fileName');
         const fileSize = document.getElementById('fileSize');
         const previewImage = document.getElementById('previewImage');
+        const imageContainer = document.getElementById('imageContainer');
         const analyzeBtn = document.getElementById('analyzeBtn');
         const loading = document.getElementById('loading');
         const results = document.getElementById('results');
         const emptyState = document.getElementById('emptyState');
         const errorMessage = document.getElementById('errorMessage');
-        const apiUrlInput = document.getElementById('api-url');
-        const apiKeyInput = document.getElementById('api-key');
         const resultSummary = document.getElementById('resultSummary');
         const boxesList = document.getElementById('boxesList');
+        const clearBtn = document.getElementById('clearBtn');
 
         const clearBtn = document.getElementById('clearBtn');
 
@@ -458,25 +486,8 @@
             return 'http://127.0.0.1:8000';
         }
 
-        // Load saved settings
-        if (localStorage.getItem('apiUrl')) {
-            apiUrlInput.value = localStorage.getItem('apiUrl');
-        } else {
-            // Set default API URL based on current location
-            apiUrlInput.value = getDefaultApiUrl();
-        }
-        if (localStorage.getItem('apiKey')) {
-            apiKeyInput.value = localStorage.getItem('apiKey');
-        }
-
-        // Save settings on change
-        apiUrlInput.addEventListener('change', () => {
-            localStorage.setItem('apiUrl', apiUrlInput.value);
-        });
-
-        apiKeyInput.addEventListener('change', () => {
-            localStorage.setItem('apiKey', apiKeyInput.value);
-        });
+        // Get API URL (no user input needed)
+        const apiUrl = getDefaultApiUrl();
 
         // Drag and drop functionality
         dropZone.addEventListener('click', () => fileInput.click());
@@ -536,7 +547,8 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 previewImage.src = e.target.result;
-                previewImage.style.display = 'block';
+                imageContainer.style.display = 'block';
+                dropZone.classList.add('hidden'); // Hide the upload area
             };
             reader.readAsDataURL(file);
             
@@ -550,7 +562,8 @@
             selectedFile = null;
             fileInput.value = '';
             fileInfo.classList.remove('show');
-            previewImage.style.display = 'none';
+            imageContainer.style.display = 'none';
+            dropZone.classList.remove('hidden'); // Show the upload area again
             analyzeBtn.disabled = true;
             clearBtn.style.display = 'none';
             results.classList.remove('show');
@@ -567,19 +580,6 @@
         async function analyzeImage() {
             if (!selectedFile) return;
 
-            const apiUrl = apiUrlInput.value.trim();
-            const apiKey = apiKeyInput.value.trim();
-
-            if (!apiUrl) {
-                showError('Please enter API URL');
-                return;
-            }
-
-            if (!apiKey) {
-                showError('Please enter API Key');
-                return;
-            }
-
             // Show loading state
             loading.classList.add('show');
             results.classList.remove('show');
@@ -588,14 +588,11 @@
             hideError();
 
             try {
-                const formData = new FormData();
-                formData.append('file', selectedFile);
-
-                const response = await fetch(`${apiUrl}/count-boxes-base64`, {
+                const response = await fetch(`${apiUrl}/test-analyze`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
+                        // No authorization header needed for test page
                     },
                     body: JSON.stringify({
                         image: await fileToBase64(selectedFile)
