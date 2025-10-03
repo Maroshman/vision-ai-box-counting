@@ -1,6 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
-import openai
 import base64
 import json
 import os
@@ -29,12 +28,11 @@ if not openai_api_key:
     logger.error("OPENAI_API_KEY not found in environment variables")
     raise Exception("OPENAI_API_KEY must be set in .env file")
 
-# Initialize OpenAI client with minimal configuration
+# Initialize OpenAI client (v2+ API)
 try:
-    openai_client = openai.OpenAI(
-        api_key=openai_api_key,
-        timeout=30.0
-    )
+    from openai import OpenAI
+    openai_client = OpenAI(api_key=openai_api_key)
+    logger.info("OpenAI client initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize OpenAI client: {e}")
     raise Exception(f"Failed to initialize OpenAI client: {e}")
@@ -90,7 +88,7 @@ async def analyze_image_with_openai(image_base64: str) -> Dict[str, Any]:
     """Send image to OpenAI Vision API for box counting and label extraction"""
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",  # Updated to use the latest model
+            model="gpt-4o",  # Latest vision model
             messages=[
                 {
                     "role": "user",
@@ -109,7 +107,7 @@ async def analyze_image_with_openai(image_base64: str) -> Dict[str, Any]:
                     ]
                 }
             ],
-            max_tokens=1000,
+            max_tokens=2000,
             temperature=0.1
         )
         
