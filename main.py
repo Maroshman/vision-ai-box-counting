@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import base64
@@ -201,7 +201,8 @@ def read_root():
             "/count-boxes": "POST - Upload image file for box counting and label extraction (requires auth)",
             "/count-boxes-simple": "POST - Upload image file for simplified box counting (requires auth)",
             "/count-boxes-base64": "POST - Send base64 image for box counting and label extraction (requires auth)",
-            "/health": "GET - Health check endpoint (no auth required)"
+            "/health": "GET - Health check endpoint (no auth required)",
+            "/test": "GET - HTML test page for trying the API (no auth required)"
         }
     }
 
@@ -213,6 +214,20 @@ def health_check():
         "service": "box-counting-ai",
         "authentication": "required"
     }
+
+@app.get("/test", response_class=HTMLResponse)
+def serve_test_page():
+    """Serve the HTML test page - no authentication required"""
+    try:
+        html_file_path = os.path.join(os.path.dirname(__file__), "test_page.html")
+        with open(html_file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    except FileNotFoundError:
+        return HTMLResponse(
+            content="<h1>Test page not found</h1><p>The test_page.html file is not available.</p>",
+            status_code=404
+        )
 
 @app.post("/count-boxes")
 async def count_boxes(file: UploadFile = File(...), _: bool = Depends(verify_api_key)):

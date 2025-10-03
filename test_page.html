@@ -444,9 +444,26 @@
 
         let selectedFile = null;
 
+        // Auto-detect API URL based on current location
+        function getDefaultApiUrl() {
+            const currentHost = window.location.origin;
+            
+            // If we're on Railway (contains 'railway.app') or any domain other than localhost
+            if (currentHost.includes('railway.app') || 
+                (!currentHost.includes('localhost') && !currentHost.includes('127.0.0.1') && !currentHost.startsWith('file:'))) {
+                return currentHost; // Use same domain as the test page
+            }
+            
+            // Default to localhost for local development
+            return 'http://127.0.0.1:8000';
+        }
+
         // Load saved settings
         if (localStorage.getItem('apiUrl')) {
             apiUrlInput.value = localStorage.getItem('apiUrl');
+        } else {
+            // Set default API URL based on current location
+            apiUrlInput.value = getDefaultApiUrl();
         }
         if (localStorage.getItem('apiKey')) {
             apiKeyInput.value = localStorage.getItem('apiKey');
