@@ -370,7 +370,7 @@
             <!-- Upload Section -->
             <div class="upload-section">
                 <h2 class="section-title">
-                    📤 Upload & Configure
+                    📤 Upload Photo of Boxes
                 </h2>
 
                 <!-- Configuration -->
@@ -407,10 +407,6 @@
 
                 <button class="analyze-btn" id="analyzeBtn" disabled>
                     🔍 Analyze Image
-                </button>
-
-                <button class="analyze-btn" id="clearBtn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); display: none; margin-top: 10px;">
-                    🗑️ Clear & Upload New
                 </button>
 
                 <div class="error" id="errorMessage"></div>
@@ -466,7 +462,6 @@
         const errorMessage = document.getElementById('errorMessage');
         const resultSummary = document.getElementById('resultSummary');
         const boxesList = document.getElementById('boxesList');
-        const clearBtn = document.getElementById('clearBtn');
 
         let selectedFile = null;
 
@@ -552,28 +547,11 @@
             
             fileInfo.classList.add('show');
             analyzeBtn.disabled = false;
-            clearBtn.style.display = 'block';
-            hideError();
-        }
-
-        function clearSelection() {
-            selectedFile = null;
-            fileInput.value = '';
-            fileInfo.classList.remove('show');
-            imageContainer.style.display = 'none';
-            dropZone.classList.remove('hidden'); // Show the upload area again
-            analyzeBtn.disabled = true;
-            clearBtn.style.display = 'none';
-            results.classList.remove('show');
-            emptyState.style.display = 'block';
             hideError();
         }
 
         // Analyze button click
         analyzeBtn.addEventListener('click', analyzeImage);
-        
-        // Clear button click
-        clearBtn.addEventListener('click', clearSelection);
 
         async function analyzeImage() {
             if (!selectedFile) return;
