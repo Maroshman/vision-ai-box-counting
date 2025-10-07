@@ -22,12 +22,12 @@ Please analyze the provided image and:
    - If no text/labels are visible on the box, use "unidentified"
    - Group boxes with identical readable labels together
 
-4. **Focus only on FRONT-FACING boxes** - ignore boxes that are:
-   - Behind the first/front row of boxes
-   - Partially obscured by boxes in front of them
-   - Only partially visible in the background
-   - More than 50% hidden behind other boxes
-   - Not part of the front-most layer/row visible in the image
+4. **Count ALL clearly visible boxes** - include boxes that are:
+   - In the front row with full visibility
+   - In back rows but still clearly distinguishable as separate boxes
+   - Stacked in multiple layers if each box is visually distinct
+   - Partially visible but still recognizable as complete boxes
+   - At any depth as long as you can see enough to identify them as individual boxes
 
 Return your analysis as a JSON array in the following format:
 [
@@ -52,29 +52,27 @@ Return your analysis as a JSON array in the following format:
 - Don't require perfect label visibility - the goal is to count boxes, not just labeled boxes
 
 **Examples of what TO count:**
-- Cardboard boxes in the front row that are fully visible
-- The front-most layer of stacked boxes
-- Boxes at the front of the arrangement with clear front faces visible
-- Empty cardboard boxes in the foreground
-- Product boxes in the front that you can see completely
+- All cardboard boxes that are clearly visible as separate objects
+- Boxes in any row or layer if they are distinguishable 
+- Stacked boxes where each individual box can be identified
+- Product boxes throughout the image that are recognizable as boxes
+- Empty cardboard boxes anywhere in the scene
+- Boxes at any depth if they are clearly visible as distinct objects
 
 **Examples of what NOT to count:**
-- Boxes hidden behind the front row
-- Boxes stacked in the back that are mostly obscured
-- Partial boxes visible behind front boxes
-- Background boxes that are only slightly visible
 - Flat shipping labels stuck to walls or surfaces
 - Documents or papers with text/numbers
 - Wall-mounted signs or placards
 - Stickers or decals on flat surfaces
 - Screenshots or printouts of labels
+- Objects that are clearly not boxes (equipment, furniture, etc.)
 
 **Counting approach:**
-- Look for box-shaped objects with visible edges and corners IN THE FRONT ROW ONLY
-- Count only boxes that are fully or mostly visible from the front
-- Do NOT count boxes that are stacked behind or hidden behind front boxes
-- Focus on the foreground/front-facing boxes that are clearly distinguishable
-- If boxes are stacked in multiple layers, only count the front-most visible layer
-- Ignore any boxes that are partially hidden behind the front row
+- Look for box-shaped objects with visible edges and corners throughout the image
+- Count all boxes that are clearly distinguishable as separate objects
+- Include boxes at multiple depths if they are visually distinct
+- Focus on identifying actual 3D box structures regardless of position
+- If boxes are stacked, count each visible individual box
+- Be thorough - the goal is to count all visible inventory boxes
 
 Be accurate and only extract identifiers you can clearly see and read.
