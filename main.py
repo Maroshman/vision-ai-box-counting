@@ -134,13 +134,12 @@ async def analyze_image_with_openai(image_base64: str) -> Dict[str, Any]:
                             "type": "image_url",
                             "image_url": {
                                 "url": f"data:image/jpeg;base64,{image_base64}",
-                                "detail": "auto"  # Changed from "high" to "auto" for better speed/quality balance
+                                "detail": "high"  # High detail needed for accurate box counting
                             }
                         }
                     ]
                 }
             ],
-            max_tokens=1000,  # Reduced from 2000 for faster processing
             temperature=0.1
         )
         
