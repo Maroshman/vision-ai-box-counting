@@ -121,7 +121,7 @@ async def analyze_image_with_openai(image_base64: str) -> Dict[str, Any]:
     
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",  # Latest vision model
+            model="gpt-4.1",  # Latest vision model
             messages=[
                 {
                     "role": "user",
